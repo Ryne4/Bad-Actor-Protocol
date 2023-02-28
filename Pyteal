@@ -1,0 +1,56 @@
+# Import PyTeal library
+from pyteal import *
+
+# Define transaction parameters
+client_address = Addr("<client_address>")
+marketeer_address = Addr("<marketeer_address>")
+freelancer1_address = Addr("<freelancer1_address>")
+freelancer2_address = Addr("<freelancer2_address>")
+freelancer3_address = Addr("<freelancer3_address>")
+prdao_address = Addr("<prdao_address>")
+base_value = Int(10)
+prdao_fee = Int(5)
+
+# Define PyTeal logic for transaction
+def prdao_transaction():
+    # Check that the transaction is authorized by the client
+    authorized = Txn.sender() == client_address
+    
+    # Calculate the level bonuses for the marketer and reviewers
+    marketer_level = App.localGet(Int(0), App.id(), Bytes("marketer_level")).value()
+    reviewer1_level = App.localGet(Int(0), App.id(), Bytes("reviewer1_level")).value()
+    reviewer2_level = App.localGet(Int(0), App.id(), Bytes("reviewer2_level")).value()
+    reviewer3_level = App.localGet(Int(0), App.id(), Bytes("reviewer3_level")).value()
+    marketer_level_bonus = Int(marketer_level)
+    reviewer1_level_bonus = Int(reviewer1_level)
+    reviewer2_level_bonus = Int(reviewer2_level)
+    reviewer3_level_bonus = Int(reviewer3_level)
+    
+    # Calculate the quality score and impact score bonuses for the marketer
+    quality_score = App.localGet(Int(0), App.id(), Bytes("quality_score")).value()
+    impact_score = App.localGet(Int(0), App.id(), Bytes("impact_score")).value()
+    marketer_quality_bonus = Int(quality_score)
+    marketer_impact_bonus = Int(impact_score)
+    
+    # Calculate the quality deviation and impact deviation for the reviewers
+    quality_deviation = App.localGet(Int(0), App.id(), Bytes("quality_deviation")).value()
+    impact_deviation = App.localGet(Int(0), App.id(), Bytes("impact_deviation")).value()
+    reviewer1_quality_deviation = Int(quality_deviation)
+    reviewer2_quality_deviation = Int(quality_deviation)
+    reviewer3_quality_deviation = Int(quality_deviation)
+    reviewer1_impact_deviation = Int(impact_deviation)
+    reviewer2_impact_deviation = Int(impact_deviation)
+    reviewer3_impact_deviation = Int(impact_deviation)
+    
+    # Calculate the rewards for the marketer and reviewers
+    marketer_reward = ((base_value / Int(2)) * marketer_level_bonus * marketer_quality_bonus * marketer_impact_bonus) / Int(100)
+    reviewer_reward = ((base_value / Int(2) / Int(3)) * (reviewer1_level_bonus * reviewer1_quality_deviation * reviewer1_impact_deviation + reviewer2_level_bonus * reviewer2_quality_deviation * reviewer2_impact_deviation + reviewer3_level_bonus * reviewer3_quality_deviation * reviewer3_impact_deviation)) / Int(100)
+    
+    # Calculate the total amount of the transaction
+    total_amount = base_value + marketer_reward + reviewer_reward + prdao_fee
+    
+    # Define the stateful application for the transaction
+    on_complete = App.localPut(Int(0), App.id(), Bytes("transaction_complete"), Int(1)) # Set transaction complete flag to true
+    on_bad_actor = Seq(
+        App.localPut(Int(0), App.id(), Bytes("bad_actor"), Int(1)), # Set bad actor flag to true
+        App.localPut(Int(0), App
